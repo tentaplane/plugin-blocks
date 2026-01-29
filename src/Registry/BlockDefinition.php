@@ -7,9 +7,10 @@ namespace TentaPress\Blocks\Registry;
 final readonly class BlockDefinition
 {
     /**
-     * @param  array<int,array{key:string,label:string,type:'text'|'textarea'|'url'|'media'|'media-list'|string,help?:string|null}>  $fields
+     * @param  array<int,array<string,mixed>>  $fields
      * @param  array<string,mixed>  $defaults
      * @param  array<string,mixed>  $example
+     * @param  array<int,array<string,mixed>>  $variants
      */
     public function __construct(
         public string $type,
@@ -20,6 +21,8 @@ final readonly class BlockDefinition
         public array $defaults = [],
         public array $example = [],
         public ?string $view = null, // optional override for view key
+        public array $variants = [],
+        public ?string $defaultVariant = null,
     ) {
     }
 }

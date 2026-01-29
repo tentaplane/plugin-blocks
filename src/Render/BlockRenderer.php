@@ -24,12 +24,17 @@ final readonly class BlockRenderer
     {
         $type = isset($block['type']) ? (string) $block['type'] : '';
         $props = isset($block['props']) && is_array($block['props']) ? $block['props'] : [];
+        $variant = isset($block['variant']) ? trim((string) $block['variant']) : '';
 
         if ($type === '') {
             return '';
         }
 
         $def = $this->registry->get($type);
+
+        if ($variant === '' && $def && is_string($def->defaultVariant)) {
+            $variant = $def->defaultVariant;
+        }
 
         // Determine view key (dot notation)
         $viewKey = $def?->view;
@@ -38,12 +43,15 @@ final readonly class BlockRenderer
             $viewKey = 'blocks.'.$this->typeSlug($type);
         }
 
+        $viewKey = $this->resolveVariantView($viewKey, $variant, $def?->variants ?? []);
+
         // Theme override first
         if ($this->themes->hasActiveTheme() && $this->views->exists('tp-theme::'.$viewKey)) {
             return $this->views->make('tp-theme::'.$viewKey, [
                 'block' => $block,
                 'props' => $props,
                 'type' => $type,
+                'variant' => $variant,
             ])->render();
         }
 
@@ -53,6 +61,7 @@ final readonly class BlockRenderer
                 'block' => $block,
                 'props' => $props,
                 'type' => $type,
+                'variant' => $variant,
             ])->render();
         }
 
@@ -66,5 +75,31 @@ final readonly class BlockRenderer
         $parts = explode('/', str_replace('\\', '/', $type));
 
         return (string) end($parts);
+    }
+
+    /**
+     * @param  array<int,array<string,mixed>>  $variants
+     */
+    private function resolveVariantView(string $baseView, string $variant, array $variants): string
+    {
+        if ($variant === '') {
+            return $baseView;
+        }
+
+        foreach ($variants as $entry) {
+            $key = isset($entry['key']) ? (string) $entry['key'] : '';
+
+            if ($key !== '' && $key === $variant && isset($entry['view'])) {
+                $view = (string) $entry['view'];
+
+                if ($view !== '') {
+                    return $view;
+                }
+            }
+        }
+
+        $variantKey = str_replace(['\\', '/'], '.', $variant);
+
+        return $baseView.'.'.$variantKey;
     }
 }
